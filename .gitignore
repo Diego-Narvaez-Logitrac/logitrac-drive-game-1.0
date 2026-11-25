@@ -50,3 +50,6 @@ crashlytics-buildid.txt
 
 # OS
 .DS_Store
+
+# Unity build-tool temp output
+/.utmp/
