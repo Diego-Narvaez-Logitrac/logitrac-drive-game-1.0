@@ -137,7 +137,7 @@ namespace LogitracDrive
             if (CurrentGame == null) return;
             if (CurrentGame.id == GameCatalog.TurboCircuit)
             {
-                UnityEngine.SceneManagement.SceneManager.LoadScene("TurboCircuit");
+                UnityEngine.SceneManagement.SceneManager.LoadScene(TurboCircuitView == "3D" ? "TurboCircuit3D" : "TurboCircuit");
                 return;
             }
             _comingSoonMessage.text = CurrentGame.comingSoonMessage;
@@ -317,6 +317,7 @@ namespace LogitracDrive
             PreviewPlayButton = UiKit.Button(bar, "PlayButton", "PLAY", Display, 20, Palette.Primary, Palette.TextPrimary, 18, DisplayStyle);
             UiKit.Stretch((RectTransform)PreviewPlayButton.transform, 24, 12, 24, 34);
             PreviewPlayButton.onClick.AddListener(ShowComingSoon);
+            BuildViewSwitch(bar);
 
             BuildComingSoon(panel);
         }
@@ -355,8 +356,74 @@ namespace LogitracDrive
             ComingSoonBackButton.onClick.AddListener(ShowGames);
         }
 
+        // ---------------- Turbo Circuit 2D | 3D switch (Editor and development builds only) ----------------
+
+        public const string ViewPrefKey = "turbo-circuit.view";
+        public static bool ViewSwitchAvailable => Application.isEditor || Debug.isDebugBuild;
+
+        /// <summary>"2D" or "3D". Always "2D" outside the Editor and development builds.</summary>
+        public static string TurboCircuitView =>
+            ViewSwitchAvailable && PlayerPrefs.GetString(ViewPrefKey, "2D") == "3D" ? "3D" : "2D";
+
+        public GameObject ViewSwitch { get; private set; }
+        public Button View2DButton { get; private set; }
+        public Button View3DButton { get; private set; }
+
+        const float ViewSwitchWidth = 112f, ViewSwitchGap = 10f;
+
+        void BuildViewSwitch(RectTransform bar)
+        {
+            var sw = UiKit.Node("ViewSwitch", bar);
+            UiKit.Place(sw, new Vector2(1, 0), new Vector2(1, 1), new Vector2(1, 0.5f),
+                new Vector2(-24 - ViewSwitchWidth, 34 + 7), new Vector2(-24, -12 - 7));
+            UiKit.Panel(sw, Palette.Surface, 14);
+            var row = UiKit.HStack(sw.gameObject, 4, TextAnchor.MiddleCenter, 4, 4, 4, 4);
+            row.childForceExpandWidth = true;
+            row.childForceExpandHeight = true;
+            View2DButton = ViewOption(sw, "View2D", "2D");
+            View3DButton = ViewOption(sw, "View3D", "3D");
+            ViewSwitch = sw.gameObject;
+            ViewSwitch.SetActive(false);
+        }
+
+        Button ViewOption(RectTransform parent, string name, string value)
+        {
+            var b = UiKit.Button(parent, name, value, Body, 15, new Color(0, 0, 0, 0), Palette.TextSecondary, 10);
+            UiKit.Size(b.gameObject, flexibleWidth: 1);
+            b.onClick.AddListener(() =>
+            {
+                PlayerPrefs.SetString(ViewPrefKey, value);
+                PlayerPrefs.Save();
+                RefreshViewSwitch();
+            });
+            return b;
+        }
+
+        void RefreshViewSwitch()
+        {
+            bool is3D = TurboCircuitView == "3D";
+            Style(View2DButton, !is3D);
+            Style(View3DButton, is3D);
+        }
+
+        static void Style(Button b, bool selected)
+        {
+            b.targetGraphic.color = selected ? Palette.Primary : new Color(0, 0, 0, 0);
+            b.GetComponentInChildren<Text>().color = selected ? Palette.TextPrimary : Palette.TextSecondary;
+        }
+
+        void LayoutPlayBar(GameEntry g)
+        {
+            bool show = ViewSwitchAvailable && g.id == GameCatalog.TurboCircuit;
+            ViewSwitch.SetActive(show);
+            float right = show ? 24 + ViewSwitchWidth + ViewSwitchGap : 24;
+            UiKit.Stretch((RectTransform)PreviewPlayButton.transform, 24, 12, right, 34);
+            if (show) RefreshViewSwitch();
+        }
+
         void PopulatePreview(GameEntry g)
         {
+            LayoutPlayBar(g);
             UiKit.SetCoverSprite(PreviewArt, g.artwork);
             _previewArtMissing.text = g.artwork == null ? $"Artwork missing\n{g.artworkFile}.png" : "";
             PreviewTitle.text = g.title;

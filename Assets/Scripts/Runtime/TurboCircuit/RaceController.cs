@@ -11,6 +11,7 @@ namespace LogitracDrive.TurboCircuit
     public class RaceController : MonoBehaviour
     {
         public const string SceneName = "TurboCircuit";
+        public const string SceneName3D = "TurboCircuit3D";
         public const string BestLapKey = "turbo-circuit.best";
         const float Step = 1f / 120f;
         const float MaxFrame = 0.1f;
@@ -20,12 +21,16 @@ namespace LogitracDrive.TurboCircuit
         [SerializeField] Material unlitMaterial;
         [SerializeField] Font bodyFont;
         [SerializeField] Font displayFont;
+        [Tooltip("Set by the scene: 2D top-down or 3D perspective. Simulation, HUD and input are shared.")]
+        [SerializeField] RaceViewMode viewMode = RaceViewMode.TwoD;
+        [Tooltip("3D only: URP Lit and Unlit base materials (cloned per colour at runtime).")]
+        [SerializeField] Material litMaterial3D;
+        [SerializeField] Material unlitMaterial3D;
 
         TurboHandling _handling;
         Track _track;
         RaceSim _race;
-        CarView _car;
-        CameraFollow _follow;
+        IRaceView _view;
         Camera _camera;
         RaceHud _hud;
         float _acc;
@@ -36,6 +41,7 @@ namespace LogitracDrive.TurboCircuit
 
         public RaceSim Race => _race;
         public RaceHud Hud => _hud;
+        public RaceViewMode ViewMode => viewMode;
 
         /// <summary>Called by the editor scene builder.</summary>
         public void Configure(TurboTuning t, Material unlit, Font body, Font display)
@@ -44,6 +50,14 @@ namespace LogitracDrive.TurboCircuit
             unlitMaterial = unlit;
             bodyFont = body;
             displayFont = display;
+        }
+
+        /// <summary>Called by the editor scene builder for the 3D scene.</summary>
+        public void Configure3D(Material lit, Material unlit)
+        {
+            viewMode = RaceViewMode.ThreeD;
+            litMaterial3D = lit;
+            unlitMaterial3D = unlit;
         }
 
         void Awake()
@@ -58,12 +72,12 @@ namespace LogitracDrive.TurboCircuit
             }
 
             var mat = TurboGfx.UnlitMaterial(unlitMaterial);
-            new GameObject("Track").AddComponent<TrackView>().Build(_track, mat);
-            _car = new GameObject("Car").AddComponent<CarView>();
-            _car.Build(mat);
-
+            _view = viewMode == RaceViewMode.ThreeD
+                ? new RaceView3D(litMaterial3D != null ? litMaterial3D : new Material(Shader.Find("Universal Render Pipeline/Lit")),
+                                 unlitMaterial3D != null ? unlitMaterial3D : new Material(Shader.Find("Universal Render Pipeline/Unlit")), mat)
+                : (IRaceView)new RaceView2D(mat);
+            _view.Build(_track);
             _camera = Camera.main;
-            _follow = new CameraFollow();
 
             GamesApp.EnsureEventSystem();
             var body = bodyFont != null ? bodyFont : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -86,10 +100,7 @@ namespace LogitracDrive.TurboCircuit
         {
             _race.Reset();
             _acc = 0f;
-            _follow.Reset(_race.car);
-            _car.ClearEffects();
-            _car.Sync(_race.car, Time.time);
-            if (_camera != null) _follow.Apply(_camera);
+            _view.ResetView(_race.car, _camera, Time.time);
         }
 
         void Update()
@@ -102,14 +113,14 @@ namespace LogitracDrive.TurboCircuit
             while (_acc >= Step)
             {
                 bool finished = _race.Step(input, Step);
-                _car.StepEffects(_race.car, _race.phase == RacePhase.Racing, Step);
+                _view.StepEffects(_race.car, _race.phase == RacePhase.Racing, Step);
                 if (finished) OnFinished();
                 _acc -= Step;
             }
 
-            _follow.Tick(_race.car, frame, _handling.maxSpeed);
-            if (_camera != null) _follow.Apply(_camera);
-            _car.Sync(_race.car, Time.time);
+            var car = _race.car;
+            float steer = car.drifting ? car.driftDir : (_right ? 1f : 0f) - (_left ? 1f : 0f);
+            _view.Sync(car, steer, frame, Time.time, _handling.maxSpeed, _camera);
             _hud.Refresh(_race, _best, _handling, _btnLeft || _keyLeft, _btnRight || _keyRight);
         }
 

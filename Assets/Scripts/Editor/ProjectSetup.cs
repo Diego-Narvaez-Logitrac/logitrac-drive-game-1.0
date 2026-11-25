@@ -65,8 +65,8 @@ namespace LogitracDrive.EditorTools
             cam.backgroundColor = Palette.Background;
             camGo.transform.position = new Vector3(0, 0, -10);
 
-            var bodyFont = FindFont("Inter");
-            var displayFont = FindFont("RussoOne", "Russo One", "Russo_One");
+            var bodyFont = FindBodyFont();
+            var displayFont = FindDisplayFont();
             var app = new GameObject("LogitracDrive").AddComponent<GamesApp>();
             app.Configure(entries, bodyFont, displayFont);
 
@@ -74,6 +74,7 @@ namespace LogitracDrive.EditorTools
             EditorSceneManager.SaveScene(scene, ScenePath);
 
             BuildTurboCircuitScene(bodyFont, displayFont);
+            TurboCircuit3DSetup.Build(bodyFont, displayFont);
 
             ApplyPlayerSettings(); // also sets the Build Settings scene list
             AssetDatabase.SaveAssets();
@@ -96,16 +97,20 @@ namespace LogitracDrive.EditorTools
         /// <summary>Unity's template scene: kept in the project but never shipped.</summary>
         public const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
 
-        /// <summary>Games first, Turbo Circuit second, then any other listed scenes except the template SampleScene.</summary>
+        public static Font FindBodyFont() => FindFont("Inter");
+        public static Font FindDisplayFont() => FindFont("RussoOne", "Russo One", "Russo_One");
+
+        /// <summary>Games, Turbo Circuit, Turbo Circuit 3D, then any other listed scenes except the template SampleScene.</summary>
         public static void ApplyBuildScenes()
         {
             var others = EditorBuildSettings.scenes.Where(s =>
-                s.path != ScenePath && s.path != TurboCircuitScenePath && s.path != SampleScenePath);
+                s.path != ScenePath && s.path != TurboCircuitScenePath && s.path != TurboCircuit3DSetup.ScenePath && s.path != SampleScenePath);
             EditorBuildSettings.scenes = new[]
             {
                 new EditorBuildSettingsScene(ScenePath, true),
                 new EditorBuildSettingsScene(TurboCircuitScenePath, true),
-            }.Concat(others).ToArray();
+                new EditorBuildSettingsScene(TurboCircuit3DSetup.ScenePath, true),
+            }.Concat(others).Where(s => File.Exists(s.path)).ToArray();
         }
 
         /// <summary>Player settings for device builds (iOS + Android). Minimum OS/API levels stay at Unity's defaults.</summary>

@@ -2,7 +2,9 @@
     "name": "LogitracDrive.Editor",
     "rootNamespace": "LogitracDrive.EditorTools",
     "references": [
-        "LogitracDrive.Runtime"
+        "LogitracDrive.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [
         "Editor"
