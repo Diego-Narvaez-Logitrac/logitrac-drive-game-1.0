@@ -39,17 +39,26 @@ namespace LogitracDrive.EditorTools
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
             Directory.CreateDirectory(target == BuildTarget.iOS ? output : Path.GetDirectoryName(output));
 
+            var buildOptions = BuildOptions.Development;
+            string mode = "replace";
+            // iOS: append to an existing Xcode project so changes made in Xcode (signing team, bundle ID) are kept.
+            if (target == BuildTarget.iOS && BuildPipeline.BuildCanBeAppended(target, output) == CanAppendBuild.Yes)
+            {
+                buildOptions |= BuildOptions.AcceptExternalModificationsToPlayer;
+                mode = "append";
+            }
+
             var options = new BuildPlayerOptions
             {
                 scenes = scenes,
                 locationPathName = output,
                 target = target,
                 targetGroup = group,
-                options = BuildOptions.Development,
+                options = buildOptions,
             };
             var report = BuildPipeline.BuildPlayer(options);
             var s = report.summary;
-            Debug.Log($"[LogitracDrive] {target} build {s.result}: {s.outputPath} ({s.totalSize / (1024f * 1024f):0.0} MB, " +
+            Debug.Log($"[LogitracDrive] {target} build ({mode}) {s.result}: {s.outputPath} ({s.totalSize / (1024f * 1024f):0.0} MB, " +
                       $"{s.totalErrors} errors, {s.totalWarnings} warnings, {s.totalTime.TotalSeconds:0}s). Scenes: {string.Join(", ", scenes)}");
             return report;
         }
