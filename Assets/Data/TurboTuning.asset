@@ -13,18 +13,18 @@ MonoBehaviour:
   m_Name: TurboTuning
   m_EditorClassIdentifier: LogitracDrive.Runtime::LogitracDrive.TurboCircuit.TurboTuning
   handling:
-    maxSpeed: 540
-    accel: 360
+    maxSpeed: 500
+    accel: 320
     steerRate: 2.6
     steerFullAt: 170
     steerMinFactor: 0.35
-    highSpeedSteerCut: 0.3
+    highSpeedSteerCut: 0.2
     grip: 7
-    driftGrip: 1.5
-    driftYawRate: 3.1
+    driftGrip: 2.2
+    driftYawRate: 2.4
     driftMinSpeed: 150
-    driftDrag: 0.35
-    slideForCharge: 60
+    driftDrag: 0.45
+    slideForCharge: 50
     chargeRate: 0.8
     minCharge: 0.12
     boostSpeed: 220

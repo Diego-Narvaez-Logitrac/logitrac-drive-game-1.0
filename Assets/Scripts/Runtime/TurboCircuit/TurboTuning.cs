@@ -10,18 +10,18 @@ namespace LogitracDrive.TurboCircuit
     [Serializable]
     public class TurboHandling
     {
-        [Tooltip("Top speed on asphalt, px/s (auto-accelerate toward this)")] public float maxSpeed = 540f;
-        [Tooltip("Auto-acceleration, px/s^2")] public float accel = 360f;
+        [Tooltip("Top speed on asphalt, px/s (auto-accelerate toward this)")] public float maxSpeed = 500f;
+        [Tooltip("Auto-acceleration, px/s^2")] public float accel = 320f;
         [Tooltip("Yaw rate at full steering, rad/s")] public float steerRate = 2.6f;
         [Tooltip("Speed where steering reaches full authority, px/s")] public float steerFullAt = 170f;
         [Tooltip("Steering authority kept at very low speed")] public float steerMinFactor = 0.35f;
-        [Tooltip("Fraction of steering lost at top speed")] public float highSpeedSteerCut = 0.3f;
+        [Tooltip("Fraction of steering lost at top speed")] public float highSpeedSteerCut = 0.2f;
         [Tooltip("How fast sideways slip dies, 1/s")] public float grip = 7.0f;
-        [Tooltip("Grip while drifting")] public float driftGrip = 1.5f;
-        [Tooltip("Rotation while drifting, rad/s")] public float driftYawRate = 3.1f;
+        [Tooltip("Grip while drifting")] public float driftGrip = 2.2f;
+        [Tooltip("Rotation while drifting, rad/s")] public float driftYawRate = 2.4f;
         [Tooltip("Drift only starts above this speed, px/s")] public float driftMinSpeed = 150f;
-        [Tooltip("Speed bled per second while drifting (fraction)")] public float driftDrag = 0.35f;
-        [Tooltip("Sideways speed needed to charge boost, px/s")] public float slideForCharge = 60f;
+        [Tooltip("Speed bled per second while drifting (fraction)")] public float driftDrag = 0.45f;
+        [Tooltip("Sideways speed needed to charge boost, px/s")] public float slideForCharge = 50f;
         [Tooltip("Boost charge per second of sliding (meter is 0..1)")] public float chargeRate = 0.8f;
         [Tooltip("Smallest charge that fires a boost")] public float minCharge = 0.12f;
         [Tooltip("Extra top speed during boost, px/s")] public float boostSpeed = 220f;
