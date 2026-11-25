@@ -85,6 +85,26 @@ namespace LogitracDrive
         /// <summary>Preview to open when the Games scene next loads. Set by game scenes before loading Games.</summary>
         public static string PendingPreviewId;
 
+        // Android back button (reported as Escape): close Coming Soon, or return from a preview to Games.
+        void Update()
+        {
+#if LOGITRAC_INPUT_SYSTEM && ENABLE_INPUT_SYSTEM
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            bool back = kb != null && kb.escapeKey.wasPressedThisFrame;
+#else
+            bool back = Input.GetKeyDown(KeyCode.Escape);
+#endif
+            if (back) HandleBack();
+        }
+
+        /// <summary>Back navigation: closes Coming Soon, else returns from a preview to Games. Returns false at the root.</summary>
+        public bool HandleBack()
+        {
+            if (ComingSoonPanel.activeSelf) { HideComingSoon(); return true; }
+            if (PreviewPanel.activeSelf) { ShowGames(); return true; }
+            return false;
+        }
+
         // ---------------- Navigation ----------------
 
         public void ShowGames()

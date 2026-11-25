@@ -78,6 +78,10 @@ namespace LogitracDrive.TurboCircuit
             ResetRace();
         }
 
+        // Keep the screen awake while the race scene is active; give control back to the OS otherwise.
+        void OnEnable() => Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        void OnDisable() => Screen.sleepTimeout = SleepTimeout.SystemSetting;
+
         void ResetRace()
         {
             _race.Reset();

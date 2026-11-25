@@ -83,12 +83,7 @@ namespace LogitracDrive.EditorTools
                 new EditorBuildSettingsScene(TurboCircuitScenePath, true),
             }.Concat(others).ToArray();
 
-            PlayerSettings.productName = "Logitrac Drive";
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
-            PlayerSettings.allowedAutorotateToPortrait = true;
-            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
-            PlayerSettings.allowedAutorotateToLandscapeLeft = false;
-            PlayerSettings.allowedAutorotateToLandscapeRight = false;
+            ApplyPlayerSettings();
             AssetDatabase.SaveAssets();
 
             Debug.Log($"[LogitracDrive] Built {ScenePath} with {entries.Length - missing.Count}/{entries.Length} thumbnails.");
@@ -96,6 +91,57 @@ namespace LogitracDrive.EditorTools
         }
 
         public static string ThumbnailPath(GameEntry e) => $"{ThumbnailImportRules.Folder}/{e.artworkFile}.png";
+
+        public const string CompanyName = "Logitrac";
+        public const string ProductName = "Logitrac Drive";
+        public const string Version = "0.1.0";
+        public const int BuildNumber = 1;
+        public const string BundleId = "com.logitrac.drive";
+        /// <summary>Apple Team ID comes from the environment or the command line, never from source.</summary>
+        public const string TeamIdEnv = "LOGITRAC_APPLE_TEAM_ID";
+
+        /// <summary>Player settings for device builds (iOS + Android). Minimum OS/API levels stay at Unity's defaults.</summary>
+        [MenuItem("Logitrac Drive/Apply Player Settings")]
+        public static void ApplyPlayerSettings()
+        {
+            PlayerSettings.companyName = CompanyName;
+            PlayerSettings.productName = ProductName;
+            PlayerSettings.bundleVersion = Version;
+
+            // Portrait only, on every platform.
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            PlayerSettings.allowedAutorotateToPortrait = true;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+            PlayerSettings.allowedAutorotateToLandscapeRight = false;
+
+            // Android: IL2CPP, ARM64 only, APK with the default debug keystore.
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, BundleId);
+            PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            PlayerSettings.Android.bundleVersionCode = BuildNumber;
+            PlayerSettings.Android.useCustomKeystore = false;
+            EditorUserBuildSettings.buildAppBundle = false;
+
+            // iOS: automatic signing; Team ID only when supplied (otherwise keep what's already set).
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.iOS, BundleId);
+            PlayerSettings.iOS.buildNumber = BuildNumber.ToString();
+            PlayerSettings.iOS.appleEnableAutomaticSigning = true;
+            var teamId = CommandLineValue("-appleTeamId") ?? System.Environment.GetEnvironmentVariable(TeamIdEnv);
+            if (!string.IsNullOrWhiteSpace(teamId)) PlayerSettings.iOS.appleDeveloperTeamID = teamId.Trim();
+
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[LogitracDrive] Player settings applied: {CompanyName} / {ProductName} {Version} ({BuildNumber}), {BundleId}, " +
+                      $"iOS team {(string.IsNullOrEmpty(PlayerSettings.iOS.appleDeveloperTeamID) ? "not set" : "set")}.");
+        }
+
+        static string CommandLineValue(string flag)
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (args[i] == flag) return args[i + 1];
+            return null;
+        }
 
         public const string TurboCircuitScenePath = "Assets/Scenes/TurboCircuit.unity";
         public const string DataFolder = "Assets/Data";
