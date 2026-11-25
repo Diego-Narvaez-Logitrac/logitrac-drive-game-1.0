@@ -75,15 +75,7 @@ namespace LogitracDrive.EditorTools
 
             BuildTurboCircuitScene(bodyFont, displayFont);
 
-            // Games first, Turbo Circuit second, then anything else already listed.
-            var others = EditorBuildSettings.scenes.Where(s => s.path != ScenePath && s.path != TurboCircuitScenePath);
-            EditorBuildSettings.scenes = new[]
-            {
-                new EditorBuildSettingsScene(ScenePath, true),
-                new EditorBuildSettingsScene(TurboCircuitScenePath, true),
-            }.Concat(others).ToArray();
-
-            ApplyPlayerSettings();
+            ApplyPlayerSettings(); // also sets the Build Settings scene list
             AssetDatabase.SaveAssets();
 
             Debug.Log($"[LogitracDrive] Built {ScenePath} with {entries.Length - missing.Count}/{entries.Length} thumbnails.");
@@ -96,9 +88,25 @@ namespace LogitracDrive.EditorTools
         public const string ProductName = "Logitrac Drive";
         public const string Version = "0.1.0";
         public const int BuildNumber = 1;
-        public const string BundleId = "com.logitrac.drive";
+        public const string AndroidBundleId = "com.logitrac.drive";
+        /// <summary>Development builds use the personal team; com.logitrac.drive is reserved for the company Apple account.</summary>
+        public const string IOSBundleId = "com.logitrac.drive.dev";
         /// <summary>Apple Team ID comes from the environment or the command line, never from source.</summary>
         public const string TeamIdEnv = "LOGITRAC_APPLE_TEAM_ID";
+        /// <summary>Unity's template scene: kept in the project but never shipped.</summary>
+        public const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
+
+        /// <summary>Games first, Turbo Circuit second, then any other listed scenes except the template SampleScene.</summary>
+        public static void ApplyBuildScenes()
+        {
+            var others = EditorBuildSettings.scenes.Where(s =>
+                s.path != ScenePath && s.path != TurboCircuitScenePath && s.path != SampleScenePath);
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(ScenePath, true),
+                new EditorBuildSettingsScene(TurboCircuitScenePath, true),
+            }.Concat(others).ToArray();
+        }
 
         /// <summary>Player settings for device builds (iOS + Android). Minimum OS/API levels stay at Unity's defaults.</summary>
         [MenuItem("Logitrac Drive/Apply Player Settings")]
@@ -116,7 +124,7 @@ namespace LogitracDrive.EditorTools
             PlayerSettings.allowedAutorotateToLandscapeRight = false;
 
             // Android: IL2CPP, ARM64 only, APK with the default debug keystore.
-            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, BundleId);
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, AndroidBundleId);
             PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.Android.bundleVersionCode = BuildNumber;
@@ -124,14 +132,17 @@ namespace LogitracDrive.EditorTools
             EditorUserBuildSettings.buildAppBundle = false;
 
             // iOS: automatic signing; Team ID only when supplied (otherwise keep what's already set).
-            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.iOS, BundleId);
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.iOS, IOSBundleId);
             PlayerSettings.iOS.buildNumber = BuildNumber.ToString();
             PlayerSettings.iOS.appleEnableAutomaticSigning = true;
             var teamId = CommandLineValue("-appleTeamId") ?? System.Environment.GetEnvironmentVariable(TeamIdEnv);
             if (!string.IsNullOrWhiteSpace(teamId)) PlayerSettings.iOS.appleDeveloperTeamID = teamId.Trim();
 
+            ApplyBuildScenes();
+
             AssetDatabase.SaveAssets();
-            Debug.Log($"[LogitracDrive] Player settings applied: {CompanyName} / {ProductName} {Version} ({BuildNumber}), {BundleId}, " +
+            Debug.Log($"[LogitracDrive] Player settings applied: {CompanyName} / {ProductName} {Version} ({BuildNumber}), " +
+                      $"Android {AndroidBundleId}, iOS {IOSBundleId}, scenes [{string.Join(", ", EditorBuildSettings.scenes.Select(s => s.path))}], " +
                       $"iOS team {(string.IsNullOrEmpty(PlayerSettings.iOS.appleDeveloperTeamID) ? "not set" : "set")}.");
         }
 
