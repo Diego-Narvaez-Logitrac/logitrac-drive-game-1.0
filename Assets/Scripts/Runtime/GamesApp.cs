@@ -72,7 +72,18 @@ namespace LogitracDrive
             EnsureEventSystem();
             Build();
             ShowGames();
+
+            // Returning from a game scene (e.g. Turbo Circuit Exit/Back) reopens that game's preview.
+            if (!string.IsNullOrEmpty(PendingPreviewId))
+            {
+                var id = PendingPreviewId;
+                PendingPreviewId = null;
+                ShowPreview(id);
+            }
         }
+
+        /// <summary>Preview to open when the Games scene next loads. Set by game scenes before loading Games.</summary>
+        public static string PendingPreviewId;
 
         // ---------------- Navigation ----------------
 
@@ -104,6 +115,11 @@ namespace LogitracDrive
         public void ShowComingSoon()
         {
             if (CurrentGame == null) return;
+            if (CurrentGame.id == GameCatalog.TurboCircuit)
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("TurboCircuit");
+                return;
+            }
             _comingSoonMessage.text = CurrentGame.comingSoonMessage;
             ComingSoonPanel.SetActive(true);
         }
@@ -119,7 +135,7 @@ namespace LogitracDrive
 
         // ---------------- Build ----------------
 
-        static void EnsureEventSystem()
+        internal static void EnsureEventSystem()
         {
             if (FindAnyObjectByType<EventSystem>() != null) return;
             var go = new GameObject("EventSystem", typeof(EventSystem));
